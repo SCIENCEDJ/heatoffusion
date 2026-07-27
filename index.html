@@ -63,15 +63,6 @@
   .trial-result{margin-top:12px;padding:10px 14px;background:#fff;border:1.5px dashed var(--line);border-radius:8px;font-weight:700;color:var(--blue-dark);font-size:14.5px;text-align:center;}
   .trial-result.ready{border-style:solid;border-color:var(--green);background:#F1FBF4;color:#1E7A44;}
   .hint{font-size:12.5px;color:var(--sub);margin:4px 0 14px;}
-
-  /* ---------- submit form ---------- */
-  .submit-form{margin-top:14px;}
-  .submit-form .field{margin-bottom:14px;}
-  .submit-form .field textarea{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:8px;font-size:14.5px;color:var(--ink);font-family:inherit;resize:vertical;}
-  .submit-form .field textarea:focus{outline:none;border-color:var(--blue);}
-  .submit-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media (max-width:520px){ .submit-form .row2{grid-template-columns:1fr;} }
-  #submit-status{text-align:center;font-weight:700;margin-top:8px;min-height:20px;}
 </style>
 </head>
 <body>
@@ -170,25 +161,8 @@
       <div class="tip">이론값(참값)은 <b>80 cal/g</b>이에요.</div>
       <p id="cmp-summary" style="font-weight:700;"></p>
       <h3>🤔 왜 두 실험의 결과가 다르게 나올 수 있을까요?</h3>
-      <p>내가 측정한 결과를 보고, 왜 이런 차이가 나타났을지 스스로 생각해서 아래에 적고 제출해 보세요.</p>
-      <div class="submit-form">
-        <div class="row2">
-          <div class="field">
-            <label>이름</label>
-            <input type="text" id="submit-name" placeholder="이름을 입력하세요">
-          </div>
-          <div class="field">
-            <label>학교명</label>
-            <input type="text" id="submit-school" placeholder="학교명을 입력하세요">
-          </div>
-        </div>
-        <div class="field">
-          <label>이유</label>
-          <textarea id="submit-reason" rows="4" placeholder="두 실험(스티로폼 컵, 열량계)의 결과가 다르게 나온 이유를 적어보세요."></textarea>
-        </div>
-        <button class="btn orange" id="submit-btn" onclick="submitReason()">제출하기</button>
-        <p id="submit-status"></p>
-      </div>
+      <p id="cmp-explain-q">스스로 먼저 생각해 본 다음, 아래 버튼을 눌러 확인해 보세요.</p>
+      <button class="btn orange" onclick="showCompareAnswer()">정답 확인하기</button>
       <div class="reveal" id="cmp-reveal">
         <p><b>일반적인 이유:</b> 열량계는 스티로폼 컵과 달리 <b>그 자체도 열을 주고받는 물질(금속·유리)</b>로 만들어져 있어요. 따뜻한 물이 식을 때, 그 열의 일부는 <b>얼음이 아니라 열량계 자신을 식히는 데도</b> 쓰여요.</p>
         <p>하지만 우리가 쓴 계산식은 "물이 잃은 열 = 얼음이 받은 열"이라고만 가정했기 때문에, 열량계가 가져간 열은 계산에서 빠지게 돼요. 그 결과 <b>실제로 얼음을 녹이는 데 쓰인 열보다 더 적게 계산</b>되어, 융해열 값이 이론값(80 cal/g)보다 <b>작게</b> 나오는 경향이 있어요.</p>
@@ -449,52 +423,8 @@ function checkCompareUnlock(){
     document.getElementById('compare-body').style.display='none';
   }
 }
-/* ==================== 구글 스프레드시트 제출 ==================== */
-// 아래 URL을 Apps Script 배포 후 받은 "웹 앱 URL"로 교체하세요.
-const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbxtgdpR0F7-vW0lnoTxUUbWcb7AQl4mHUykTGpjkVvLXORHpCE9r4GcQqHA1lxm6ZEq/exec';
-
-function submitReason(){
-  const nameEl = document.getElementById('submit-name');
-  const schoolEl = document.getElementById('submit-school');
-  const reasonEl = document.getElementById('submit-reason');
-  const statusEl = document.getElementById('submit-status');
-  const btnEl = document.getElementById('submit-btn');
-
-  const name = nameEl.value.trim();
-  const school = schoolEl.value.trim();
-  const reason = reasonEl.value.trim();
-
-  if(!name || !school || !reason){
-    statusEl.style.color = 'var(--red)';
-    statusEl.textContent = '이름, 학교명, 이유를 모두 입력해 주세요.';
-    return;
-  }
-
-  if(!SUBMIT_URL || SUBMIT_URL.indexOf('PASTE_YOUR') !== -1){
-    statusEl.style.color = 'var(--red)';
-    statusEl.textContent = '⚠️ 아직 제출 주소(Apps Script URL)가 설정되지 않았어요. 선생님께 문의하세요.';
-    return;
-  }
-
-  btnEl.disabled = true;
-  statusEl.style.color = 'var(--sub)';
-  statusEl.textContent = '제출 중...';
-
-  fetch(SUBMIT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: new URLSearchParams({ name, school, reason })
-  }).then(function(){
-    statusEl.style.color = '#1E7A44';
-    statusEl.textContent = '✅ 제출 완료! 아래에서 일반적인 이유도 확인해 보세요.';
-    document.getElementById('cmp-reveal').classList.add('show');
-    btnEl.disabled = true;
-    btnEl.textContent = '제출됨';
-  }).catch(function(){
-    statusEl.style.color = 'var(--red)';
-    statusEl.textContent = '❌ 제출에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';
-    btnEl.disabled = false;
-  });
+function showCompareAnswer(){
+  document.getElementById('cmp-reveal').classList.add('show');
 }
 
 /* ==================== init ==================== */
