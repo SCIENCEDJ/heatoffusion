@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>얼음의 융해열 측정 - 학생용 결과 계산기</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --blue:#2E86DE; --blue-dark:#1B5FA8; --orange:#FF7043; --green:#2E9E5B;
+    --red:#E64A45; --bg:#EEF5FB; --card:#FFFFFF; --ink:#233142; --sub:#5B6B7C;
+    --line:#D9E6F2; --warn:#FFF4E5;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;}
+  header{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dark) 100%);color:#fff;padding:28px 20px 22px;text-align:center;}
+  header h1{margin:0 0 6px;font-size:26px;}
+  header p{margin:0;font-size:15px;opacity:0.92;}
+  nav{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;background:#fff;padding:10px;border-bottom:3px solid var(--line);position:sticky;top:0;z-index:50;}
+  nav button{border:none;background:var(--bg);color:var(--blue-dark);padding:10px 18px;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
+  nav button:hover{background:var(--line);}
+  nav button.active{background:var(--blue);color:#fff;}
+  main{max-width:960px;margin:0 auto;padding:20px 16px 60px;}
+  section{display:none;}
+  section.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .card{background:var(--card);border-radius:16px;padding:22px 24px;margin-bottom:18px;box-shadow:0 2px 10px rgba(30,60,100,.07);}
+  h2{color:var(--blue-dark);font-size:20px;margin-top:0;}
+  h3{color:var(--ink);font-size:17px;}
+  .badge{display:inline-block;background:var(--blue);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;margin-bottom:8px;}
+  .tip{background:var(--warn);border-left:4px solid var(--orange);padding:10px 14px;border-radius:8px;font-size:14px;margin:10px 0;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:8px 6px;text-align:center;}
+  th{background:#F3F8FD;color:var(--blue-dark);}
+  tr.avg{background:#FFF9EE;font-weight:700;}
+  .btn{border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:var(--blue);transition:.15s;}
+  .btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px);}
+  .btn.secondary{background:var(--sub);}
+  .btn.orange{background:var(--orange);}
+  .actions{text-align:center;margin-top:16px;}
+  .formula-box{background:#F3F8FD;border-radius:10px;padding:14px 16px;font-family:'Consolas',monospace;font-size:14.5px;margin:10px 0;white-space:pre-wrap;}
+  .chart-wrap{max-width:560px;margin:10px auto;}
+  .reveal{background:var(--bg);border-radius:10px;padding:14px 16px;margin-top:10px;font-size:14.5px;display:none;}
+  .reveal.show{display:block;}
+  .compare-box{display:flex;gap:16px;flex-wrap:wrap;}
+  .compare-card{flex:1;min-width:250px;border-radius:14px;padding:16px;color:#fff;}
+  .compare-card.exp1{background:linear-gradient(135deg,#2E9E5B,#1E7A44);}
+  .compare-card.exp2{background:linear-gradient(135deg,#2E86DE,#1B5FA8);}
+  .compare-card .big{font-size:28px;font-weight:800;margin:6px 0;}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;padding:20px;}
+  .locked-msg{color:var(--sub);font-size:14px;text-align:center;padding:20px;}
+
+  /* ---------- trial input cards ---------- */
+  .trial-card{background:#F7FBFF;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;}
+  .trial-title{font-weight:800;color:var(--blue-dark);margin-bottom:10px;font-size:15px;}
+  .input-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media (max-width:640px){ .input-grid{grid-template-columns:repeat(2,1fr);} }
+  .field label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:4px;}
+  .field input{width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:14.5px;color:var(--ink);}
+  .field input:focus{outline:none;border-color:var(--blue);}
+  .field.derived input{background:#FFF9EE;}
+  .field.derived input[readonly]{cursor:not-allowed;color:var(--blue-dark);font-weight:700;}
+  .trial-result{margin-top:12px;padding:10px 14px;background:#fff;border:1.5px dashed var(--line);border-radius:8px;font-weight:700;color:var(--blue-dark);font-size:14.5px;text-align:center;}
+  .trial-result.ready{border-style:solid;border-color:var(--green);background:#F1FBF4;color:#1E7A44;}
+  .hint{font-size:12.5px;color:var(--sub);margin:4px 0 14px;}
+
+  /* ---------- submit form ---------- */
+  .submit-form{margin-top:14px;}
+  .submit-form .field{margin-bottom:14px;}
+  .submit-form .field textarea{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:8px;font-size:14.5px;color:var(--ink);font-family:inherit;resize:vertical;}
+  .submit-form .field textarea:focus{outline:none;border-color:var(--blue);}
+  .submit-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:520px){ .submit-form .row2{grid-template-columns:1fr;} }
+  #submit-status{text-align:center;font-weight:700;margin-top:8px;min-height:20px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧊 얼음의 융해열 측정 — 학생용 결과 계산기</h1>
+  <p>실제로 진행한 실험에서 측정한 값을 입력하면, 얼음의 융해열과 오차율을 자동으로 계산해 줘요.</p>
+</header>
+
+<nav id="nav">
+  <button data-target="theory" class="active">① 이론 배경</button>
+  <button data-target="exp1">② 실험 1 : 스티로폼 컵</button>
+  <button data-target="exp2">③ 실험 2 : 열량계</button>
+  <button data-target="compare">④ 결과 비교</button>
+</nav>
+
+<main>
+
+<!-- ===================== THEORY ===================== -->
+<section id="theory" class="active">
+  <div class="card">
+    <span class="badge">이론 배경</span>
+    <h2>얼음이 녹을 때, 온도는 왜 멈출까요?</h2>
+    <p>물체를 계속 가열하면 보통 온도가 계속 올라가요. 그런데 <b>얼음이 물로 변할 때(상태 변화)</b>는 열을 계속 주어도 <b>온도가 0℃에서 잠시 멈춰요.</b> 이때 들어간 열은 온도를 올리는 대신, 얼음을 물로 바꾸는 데에만 쓰이고 있어요. 이렇게 <b>상태를 바꾸는 데만 쓰이고 온도계에는 보이지 않는 열</b>을 <b>숨은열(잠열)</b>이라고 해요.</p>
+    <div class="chart-wrap"><canvas id="theoryChart"></canvas></div>
+    <p style="text-align:center;font-size:13px;color:var(--sub);">[그림] 얼음을 계속 가열할 때, 시간에 따른 온도 변화 — 0℃ 구간(빨간 점선 안)이 얼음이 녹는 동안이에요.</p>
+    <p>이 실험에서는 얼음 1 g이 물로 바뀌는 데 필요한 숨은열, 즉 <b>얼음의 융해열</b>을 측정했어요. 이미 알려진 값은 <b>약 80 cal/g</b>이에요.</p>
+    <div class="tip">💡 <b>기본 원리:</b> 따뜻한 물에 차가운 얼음을 넣으면, 따뜻한 물이 잃은 열이 <u>①얼음을 녹이는 데</u>, 그리고 <u>②녹은 물을 최종 온도까지 데우는 데</u> 쓰여요. 이 열량이 서로 같다는 것(에너지 보존)을 이용해서 융해열을 계산해요.</div>
+    <div class="formula-box">따뜻한 물이 잃은 열량  =  얼음을 녹이는 데 쓴 열량  +  녹은 물을 데우는 데 쓴 열량
+물의 질량 × (처음온도 − 최종온도)  =  얼음의 질량 × 융해열(L)  +  얼음의 질량 × 최종온도
+
+→ 정리하면:   L = [ 물의 질량×(처음온도−최종온도) − 얼음의 질량×최종온도 ] ÷ 얼음의 질량</div>
+    <p>아래 <b>실험 1(스티로폼 컵)</b>과 <b>실험 2(열량계)</b> 탭에서, 직접 실험하며 측정한 값을 입력해 보세요. 모든 칸을 채우면 얼음의 융해열과 오차율이 자동으로 계산돼요.</p>
+  </div>
+</section>
+
+<!-- ===================== EXPERIMENT 1 ===================== -->
+<section id="exp1">
+  <div class="card">
+    <span class="badge" style="background:var(--green);">실험 1</span>
+    <h2>얼음의 융해열 측정 – 스티로폼 컵 이용</h2>
+    <p>실험에서 측정한 값을 시행 1 ~ 3에 각각 입력하세요. <b>빈 컵 질량</b>과 <b>전체 질량</b>을 입력하면 <b>물의 질량</b>이 자동으로 계산되어 채워져요.</p>
+    <div id="exp1-trials"></div>
+  </div>
+
+  <div class="card">
+    <h3>📋 [표 1] 측정값 및 얼음의 융해열</h3>
+    <table id="exp1-table1"></table>
+    <h3>📊 그래프 : 측정값 ● vs 이론값 ×</h3>
+    <div class="chart-wrap"><canvas id="exp1-chart"></canvas></div>
+    <h3>📋 [표 2] 오차율</h3>
+    <table id="exp1-table2"></table>
+    <div class="actions"><button class="btn secondary" onclick="resetExp('exp1')">🔄 입력 초기화</button></div>
+  </div>
+</section>
+
+<!-- ===================== EXPERIMENT 2 ===================== -->
+<section id="exp2">
+  <div class="card">
+    <span class="badge" style="background:var(--blue);">실험 2</span>
+    <h2>얼음의 융해열 측정 – 열량계 이용</h2>
+    <p>실험에서 측정한 값을 시행 1 ~ 3에 각각 입력하세요. <b>빈 열량계 질량</b>과 <b>전체 질량</b>을 입력하면 <b>물의 질량</b>이 자동으로 계산되어 채워져요.</p>
+    <div id="exp2-trials"></div>
+  </div>
+
+  <div class="card">
+    <h3>📋 [표 3] 측정값 및 얼음의 융해열</h3>
+    <table id="exp2-table1"></table>
+    <h3>📊 그래프 : 측정값 ● vs 이론값 ×</h3>
+    <div class="chart-wrap"><canvas id="exp2-chart"></canvas></div>
+    <h3>📋 [표 4] 오차율</h3>
+    <table id="exp2-table2"></table>
+    <div class="actions"><button class="btn secondary" onclick="resetExp('exp2')">🔄 입력 초기화</button></div>
+  </div>
+</section>
+
+<!-- ===================== COMPARE ===================== -->
+<section id="compare">
+  <div class="card">
+    <span class="badge" style="background:var(--orange);">결과 비교</span>
+    <h2>실험 1 vs 실험 2, 내가 측정한 결과는 어떻게 다를까요?</h2>
+    <div id="compare-locked" class="locked-msg">먼저 실험 1과 실험 2의 시행 1~3을 모두 입력해 주세요. 완료하면 이곳에 결과 비교가 나타나요.</div>
+    <div id="compare-body" style="display:none;">
+      <div class="compare-box">
+        <div class="compare-card exp1">
+          <div>실험 1 (스티로폼 컵)</div>
+          <div class="big" id="cmp-l1">-</div>
+          <div>평균 오차율 <b id="cmp-e1">-</b></div>
+        </div>
+        <div class="compare-card exp2">
+          <div>실험 2 (열량계)</div>
+          <div class="big" id="cmp-l2">-</div>
+          <div>평균 오차율 <b id="cmp-e2">-</b></div>
+        </div>
+      </div>
+      <div class="tip">이론값(참값)은 <b>80 cal/g</b>이에요.</div>
+      <p id="cmp-summary" style="font-weight:700;"></p>
+      <h3>🤔 왜 두 실험의 결과가 다르게 나올 수 있을까요?</h3>
+      <p>내가 측정한 결과를 보고, 왜 이런 차이가 나타났을지 스스로 생각해서 아래에 적고 제출해 보세요.</p>
+      <div class="submit-form">
+        <div class="row2">
+          <div class="field">
+            <label>이름</label>
+            <input type="text" id="submit-name" placeholder="이름을 입력하세요">
+          </div>
+          <div class="field">
+            <label>학교명</label>
+            <input type="text" id="submit-school" placeholder="학교명을 입력하세요">
+          </div>
+        </div>
+        <div class="field">
+          <label>이유</label>
+          <textarea id="submit-reason" rows="4" placeholder="두 실험(스티로폼 컵, 열량계)의 결과가 다르게 나온 이유를 적어보세요."></textarea>
+        </div>
+        <button class="btn orange" id="submit-btn" onclick="submitReason()">제출하기</button>
+        <p id="submit-status"></p>
+      </div>
+      <div class="reveal" id="cmp-reveal">
+        <p><b>일반적인 이유:</b> 열량계는 스티로폼 컵과 달리 <b>그 자체도 열을 주고받는 물질(금속·유리)</b>로 만들어져 있어요. 따뜻한 물이 식을 때, 그 열의 일부는 <b>얼음이 아니라 열량계 자신을 식히는 데도</b> 쓰여요.</p>
+        <p>하지만 우리가 쓴 계산식은 "물이 잃은 열 = 얼음이 받은 열"이라고만 가정했기 때문에, 열량계가 가져간 열은 계산에서 빠지게 돼요. 그 결과 <b>실제로 얼음을 녹이는 데 쓰인 열보다 더 적게 계산</b>되어, 융해열 값이 이론값(80 cal/g)보다 <b>작게</b> 나오는 경향이 있어요.</p>
+        <p>💡 더 정확히 측정하려면 <b>열량계 자체의 질량 × 비열 × 온도 변화량</b>도 식에 더해 보정해야 해요. (심화 내용)</p>
+        <p>📌 내가 측정한 결과가 이 일반적인 경향과 다르게 나왔다면, 실험 과정에서 어떤 오차가 있었을지 친구들과 이야기해 보세요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>중학교 과학 탐구 실험 · 얼음의 융해열 측정 (학생용) · 실제 측정값을 입력해 결과를 계산해 보세요.</footer>
+
+<script>
+/* ==================== navigation ==================== */
+document.querySelectorAll('#nav button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.target).classList.add('active');
+  });
+});
+
+/* ==================== theory chart ==================== */
+new Chart(document.getElementById('theoryChart'), {
+  type:'line',
+  data:{
+    labels:['','','','','','','',''],
+    datasets:[{
+      label:'온도(℃)',
+      data:[-10,-4,0,0,0,0,6,14],
+      borderColor:'#E64A45',
+      backgroundColor:'rgba(230,74,69,.15)',
+      borderWidth:3, tension:.25, pointRadius:4, fill:true
+    }]
+  },
+  options:{
+    plugins:{legend:{display:false}, tooltip:{enabled:false}},
+    scales:{
+      x:{title:{display:true,text:'가열 시간 →'}, ticks:{display:false}},
+      y:{title:{display:true,text:'온도(℃)'}}
+    }
+  }
+});
+
+/* ==================== physics helpers ==================== */
+function round1(x){return Math.round(x*10)/10;}
+function calcL(mw,ti,mice,tf){return (mw*(ti-tf)-mice*tf)/mice;}
+function errRate(L){ return round1(Math.abs(L-L_THEORY)/L_THEORY*100); }
+const L_THEORY = 80;
+
+/* ==================== config ==================== */
+const CONFIG = {
+  exp1:{title:'실험 1', vessel:'스티로폼 컵', accent:'#2E9E5B'},
+  exp2:{title:'실험 2', vessel:'열량계', accent:'#1B5FA8'}
+};
+const CHARTS = {};
+
+/* ==================== build trial input cards ==================== */
+function buildTrials(key){
+  const cfg = CONFIG[key];
+  const box = document.getElementById(key+'-trials');
+  let html = '';
+  for(let n=1;n<=3;n++){
+    html += `
+    <div class="trial-card">
+      <div class="trial-title">시행 ${n}</div>
+      <div class="input-grid">
+        <div class="field">
+          <label>빈 ${cfg.vessel} 질량 (g)</label>
+          <input type="number" step="0.1" id="${key}-t${n}-empty" oninput="onFieldChange('${key}',${n})">
+        </div>
+        <div class="field">
+          <label>전체 질량 (g)</label>
+          <input type="number" step="0.1" id="${key}-t${n}-total" oninput="onFieldChange('${key}',${n})">
+        </div>
+        <div class="field derived">
+          <label>물의 질량 (g) · 자동 계산</label>
+          <input type="number" step="0.1" id="${key}-t${n}-mw" readonly tabindex="-1">
+        </div>
+        <div class="field">
+          <label>처음 온도 (℃)</label>
+          <input type="number" step="0.1" id="${key}-t${n}-ti" oninput="onFieldChange('${key}',${n})">
+        </div>
+        <div class="field">
+          <label>얼음의 질량 (g)</label>
+          <input type="number" step="0.1" id="${key}-t${n}-mice" oninput="onFieldChange('${key}',${n})">
+        </div>
+        <div class="field">
+          <label>최종 온도 (℃)</label>
+          <input type="number" step="0.1" id="${key}-t${n}-tf" oninput="onFieldChange('${key}',${n})">
+        </div>
+      </div>
+      <div class="trial-result" id="${key}-t${n}-result">모든 값을 입력하면 얼음의 융해열이 자동으로 계산돼요</div>
+    </div>`;
+  }
+  box.innerHTML = html;
+}
+
+/* ==================== field logic ==================== */
+function getVal(id){
+  const el = document.getElementById(id);
+  if(!el) return null;
+  const v = parseFloat(el.value);
+  return (el.value.trim()!=='' && !isNaN(v)) ? v : null;
+}
+
+function onFieldChange(key, n){
+  const emptyEl = document.getElementById(`${key}-t${n}-empty`);
+  const totalEl = document.getElementById(`${key}-t${n}-total`);
+  const mwEl = document.getElementById(`${key}-t${n}-mw`);
+  const emptyV = getVal(emptyEl.id), totalV = getVal(totalEl.id);
+  if(emptyV!==null && totalV!==null){
+    mwEl.value = round1(totalV - emptyV);
+  } else {
+    mwEl.value = '';
+  }
+  computeTrial(key, n);
+  refreshSummary(key);
+  checkCompareUnlock();
+}
+
+function getTrialData(key, n){
+  const mw = getVal(`${key}-t${n}-mw`);
+  const ti = getVal(`${key}-t${n}-ti`);
+  const mice = getVal(`${key}-t${n}-mice`);
+  const tf = getVal(`${key}-t${n}-tf`);
+  return {mw, ti, mice, tf};
+}
+
+function computeTrial(key, n){
+  const {mw, ti, mice, tf} = getTrialData(key, n);
+  const resultEl = document.getElementById(`${key}-t${n}-result`);
+  if(mw===null || ti===null || mice===null || tf===null || mice===0){
+    resultEl.textContent = '모든 값을 입력하면 얼음의 융해열이 자동으로 계산돼요';
+    resultEl.classList.remove('ready');
+    delete resultEl.dataset.l;
+    return null;
+  }
+  const L = round1(calcL(mw, ti, mice, tf));
+  resultEl.textContent = `→ 얼음의 융해열 = ${L} cal/g`;
+  resultEl.classList.add('ready');
+  resultEl.dataset.l = L;
+  return L;
+}
+
+/* ==================== summary tables & chart ==================== */
+function refreshSummary(key){
+  const cfg = CONFIG[key];
+  const rows = [];
+  for(let n=1;n<=3;n++){
+    const {mw, ti, mice, tf} = getTrialData(key, n);
+    const resultEl = document.getElementById(`${key}-t${n}-result`);
+    const L = resultEl.dataset.l!==undefined && resultEl.dataset.l!=='' ? parseFloat(resultEl.dataset.l) : null;
+    rows.push({n, mw, ti, mice, tf, L});
+  }
+  const validRows = rows.filter(r=>r.L!==null);
+  const allComplete = validRows.length===3;
+
+  // table 1
+  let t1 = `<tr><th>시행</th><th>물의 질량(g)</th><th>처음 온도(℃)</th><th>얼음의 질량(g)</th><th>최종 온도(℃)</th><th>융해열(cal/g)</th></tr>`;
+  rows.forEach(r=>{
+    t1 += `<tr><td>${r.n}</td><td>${r.mw ?? '-'}</td><td>${r.ti ?? '-'}</td><td>${r.mice ?? '-'}</td><td>${r.tf ?? '-'}</td><td>${r.L ?? '-'}</td></tr>`;
+  });
+  if(allComplete){
+    const avgL = round1(validRows.reduce((s,r)=>s+r.L,0)/3);
+    t1 += `<tr class="avg"><td colspan="5">평균 얼음의 융해열(cal/g)</td><td>${avgL}</td></tr>`;
+  }
+  document.getElementById(key+'-table1').innerHTML = t1;
+
+  // table 2 (error rate)
+  let t2 = `<tr><th>시행</th><th>실험값(cal/g)</th><th>이론값(cal/g)</th><th>오차율(%)</th></tr>`;
+  rows.forEach(r=>{
+    const err = r.L!==null ? errRate(r.L) : null;
+    t2 += `<tr><td>${r.n}</td><td>${r.L ?? '-'}</td><td>80</td><td>${err ?? '-'}</td></tr>`;
+  });
+  if(allComplete){
+    const avgErr = round1(validRows.reduce((s,r)=>s+errRate(r.L),0)/3);
+    t2 += `<tr class="avg"><td colspan="3">평균 오차율(%)</td><td>${avgErr}</td></tr>`;
+  }
+  document.getElementById(key+'-table2').innerHTML = t2;
+
+  // chart
+  const chartData = {
+    measured: rows.map(r=>({x:r.n, y:r.L})).filter(p=>p.y!==null),
+    theory: [1,2,3].map(x=>({x,y:80}))
+  };
+  if(CHARTS[key]) CHARTS[key].destroy();
+  CHARTS[key] = new Chart(document.getElementById(key+'-chart'), {
+    type:'scatter',
+    data:{datasets:[
+      {label:'측정값', data:chartData.measured, backgroundColor:cfg.accent, pointRadius:8, pointStyle:'circle'},
+      {label:'이론값(80 cal/g)', data:chartData.theory, backgroundColor:'#E64A45', borderColor:'#E64A45', borderWidth:3, pointRadius:8, pointStyle:'crossRot', showLine:false}
+    ]},
+    options:{
+      scales:{
+        x:{title:{display:true,text:'실험(시행) 회차'}, min:0.5, max:3.5, ticks:{stepSize:1}},
+        y:{title:{display:true,text:'융해열 (cal/g)'}}
+      }
+    }
+  });
+}
+
+function resetExp(key){
+  for(let n=1;n<=3;n++){
+    ['empty','total','mw','ti','mice','tf'].forEach(f=>{
+      const el = document.getElementById(`${key}-t${n}-${f}`);
+      if(el) el.value='';
+    });
+    const resultEl = document.getElementById(`${key}-t${n}-result`);
+    resultEl.textContent = '모든 값을 입력하면 얼음의 융해열이 자동으로 계산돼요';
+    resultEl.classList.remove('ready');
+    delete resultEl.dataset.l;
+  }
+  refreshSummary(key);
+  checkCompareUnlock();
+}
+
+/* ==================== compare tab ==================== */
+function getExpAverages(key){
+  const Ls = [];
+  for(let n=1;n<=3;n++){
+    const resultEl = document.getElementById(`${key}-t${n}-result`);
+    if(resultEl.dataset.l!==undefined && resultEl.dataset.l!==''){
+      Ls.push(parseFloat(resultEl.dataset.l));
+    }
+  }
+  if(Ls.length<3) return null;
+  const avgL = round1(Ls.reduce((a,b)=>a+b,0)/3);
+  const avgErr = round1(Ls.reduce((a,b)=>a+errRate(b),0)/3);
+  return {avgL, avgErr};
+}
+
+function checkCompareUnlock(){
+  const a1 = getExpAverages('exp1');
+  const a2 = getExpAverages('exp2');
+  if(a1 && a2){
+    document.getElementById('compare-locked').style.display='none';
+    document.getElementById('compare-body').style.display='block';
+    document.getElementById('cmp-l1').textContent = a1.avgL+' cal/g';
+    document.getElementById('cmp-l2').textContent = a2.avgL+' cal/g';
+    document.getElementById('cmp-e1').textContent = a1.avgErr+'%';
+    document.getElementById('cmp-e2').textContent = a2.avgErr+'%';
+
+    let summary;
+    if(a1.avgErr < a2.avgErr){
+      summary = `실험 1(오차율 ${a1.avgErr}%)이 실험 2(오차율 ${a2.avgErr}%)보다 이론값에 더 가깝게 측정되었어요.`;
+    } else if(a2.avgErr < a1.avgErr){
+      summary = `실험 2(오차율 ${a2.avgErr}%)가 실험 1(오차율 ${a1.avgErr}%)보다 이론값에 더 가깝게 측정되었어요.`;
+    } else {
+      summary = `실험 1과 실험 2의 오차율이 ${a1.avgErr}%로 같게 나왔어요.`;
+    }
+    document.getElementById('cmp-summary').textContent = summary;
+  } else {
+    document.getElementById('compare-locked').style.display='block';
+    document.getElementById('compare-body').style.display='none';
+  }
+}
+/* ==================== 구글 스프레드시트 제출 ==================== */
+// 아래 URL을 Apps Script 배포 후 받은 "웹 앱 URL"로 교체하세요.
+const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbxtgdpR0F7-vW0lnoTxUUbWcb7AQl4mHUykTGpjkVvLXORHpCE9r4GcQqHA1lxm6ZEq/exec';
+
+function submitReason(){
+  const nameEl = document.getElementById('submit-name');
+  const schoolEl = document.getElementById('submit-school');
+  const reasonEl = document.getElementById('submit-reason');
+  const statusEl = document.getElementById('submit-status');
+  const btnEl = document.getElementById('submit-btn');
+
+  const name = nameEl.value.trim();
+  const school = schoolEl.value.trim();
+  const reason = reasonEl.value.trim();
+
+  if(!name || !school || !reason){
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '이름, 학교명, 이유를 모두 입력해 주세요.';
+    return;
+  }
+
+  if(!SUBMIT_URL || SUBMIT_URL.indexOf('PASTE_YOUR') !== -1){
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '⚠️ 아직 제출 주소(Apps Script URL)가 설정되지 않았어요. 선생님께 문의하세요.';
+    return;
+  }
+
+  btnEl.disabled = true;
+  statusEl.style.color = 'var(--sub)';
+  statusEl.textContent = '제출 중...';
+
+  fetch(SUBMIT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: new URLSearchParams({ name, school, reason })
+  }).then(function(){
+    statusEl.style.color = '#1E7A44';
+    statusEl.textContent = '✅ 제출 완료! 아래에서 일반적인 이유도 확인해 보세요.';
+    document.getElementById('cmp-reveal').classList.add('show');
+    btnEl.disabled = true;
+    btnEl.textContent = '제출됨';
+  }).catch(function(){
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '❌ 제출에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';
+    btnEl.disabled = false;
+  });
+}
+
+/* ==================== init ==================== */
+buildTrials('exp1');
+buildTrials('exp2');
+refreshSummary('exp1');
+refreshSummary('exp2');
+checkCompareUnlock();
+</script>
+</body>
+</html>
